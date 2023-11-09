@@ -115,25 +115,41 @@
             var SCRIPT_ROOT = {{ request.script_root|tojson|safe }} ;
             var TIME_CALC_URL = SCRIPT_ROOT + "/_calc_times";
 
-            // FIX ME!
-            // Right now, only the kilometers are passed
-            // you need to pass much more!
-            // View flask_brevets.py for details.
             function calc_times(control) {
               var km = control.find("input[name='km']").val();
+
+              var brev_dist = $('#brevet_dist_km').val()
+              var start_date = $('#begin_date').val()
+
               var open_time_field = control.find("input[name='open']");
               var close_time_field = control.find("input[name='close']");
+              var notes_field = control.find(".notes");
 
-              $.getJSON(TIME_CALC_URL, {km: km}).done(
+              $.getJSON(TIME_CALC_URL, {km: km, brev_dist:brev_dist, start_date: start_date}).done(
                 function(data) {
                    var times = data.result;
                    console.log("Got a response: ");
                    console.log("Response.open = " + times.open);
-                   // This part will automatically fill the open and close slots,
-                   // so don't worry about those.
+
+                   // Error Handlers
+                   if(times.ecode){
+                     open_time_field.css("color", "red");
+                     close_time_field.css("color", "red");
+                     notes_field.css("color", "red");
+
+                     // Checks to see if the distance > 1000 / negative
+                     if(times.ecode == 1){
+                        notes_field.text("Entered distance is not valid per ACP rules");
+
+                     // Checks to see if the distance exceeds the brevet length
+                     }
+                     else if(times.ecode == 2){
+                        notes_field.text("Entered checkpoint distance exceeds brevet length");
+                     }
+                   }
                    open_time_field.val(moment(times.open).format("YYYY-MM-DDTHH:mm"));
                    close_time_field.val(moment(times.close).format("YYYY-MM-DDTHH:mm"));
-                 }
+                }
                ).fail(function(err){
                  // In case you get an error...
                  console.log("Error!");
